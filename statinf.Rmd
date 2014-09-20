@@ -1,0 +1,129 @@
+Statistical Inference Project
+========================================================
+### PART 1  
+The exponential distribution can be simulated in R with rexp(n, lambda) where lambda is the rate parameter. The mean of exponential distribution is 1/lambda and the standard deviation is also also 1/lambda. Set lambda = 0.2 for all of the simulations. In this simulation, you will investigate the distribution of averages of 40 exponential(0.2)s. Note that you will need to do a thousand or so simulated averages of 40 exponentials.  A seed was not explicitly set for this, but the wording should be generic enough for any distribution.
+```{r echo=FALSE}
+lambda <-.2
+sim <- rexp(40, .2)
+simMatrix <- as.matrix(sim)
+for (i in 1:999) {
+  sim <- rexp(40, .2)
+  simMatrix <- cbind(simMatrix, sim)}
+means <- apply(simMatrix, 2, mean)
+simMedian <- median(means)
+simMean <- mean(means)
+simSTD <- sd(means)
+theoSTD <- (1/lambda)/sqrt(40)
+```
+
+As defined in the problem statement the theoretical center of the distirubiton is 1/lambda or 1/.2 which is equal to 5.   The center of this distribution is the median of the means for the 1000 simulations which is `r simMedian`.  The mean of the sample means is `r simMean`.  The standard deviation of the sample means is `r simSTD` which is approximately the theoretical standard deviation which is (1/lambda)/sqrt(40) `r theoSTD`.
+
+You can see visually that the distribution is approximately normal from looking at a histogram of the distribution, though it does appear to be slightly right skewed.  Increasing the number of exponentials in each simulation will make the distribution more normal, but this looks normal enough.  Further, a quartiles plot with the theoretical line where the distributions should be, shows that the distribution follows the line closely, but does lose it a bit in the tails above 2 standard deviations and even more so with the outliers above 3 standard deviations from the mean.
+
+```{r fig.width=3.5, fig.height=3.5, fig.show='hold', echo=FALSE}
+hist(means, breaks=30)
+qqnorm(means)
+qqline(means)
+```
+
+Theoretically the coverage for this simulation using a 1.96 should be about 95%.   In general it will be somewhat lower because with 40 exponentials per sample the T distribution for 95% would be about 2.02, but 1.96 should be close enough.  For this sample we are taking the means of each sample and multiplying it by the theoretical standard deviation divided by the square root of 40 (the number of exponentials in each simulation).
+```{r echo=FALSE}
+cintmin <- function(rw) {mean(rw) - (1.96 * 5/sqrt(40))}
+cintmax <- function(rw) {mean(rw) + (1.96 * 5/sqrt(40))}
+minv <- apply(simMatrix, 2, cintmin)
+maxv <- apply(simMatrix, 2, cintmax)
+
+fails <- length(which(maxv < 5)) + length(which(minv > 5))
+```
+Out of the 1000 simulations, `r fails`, were not in the 95% confidence interval which is close to what you would expect.
+
+### PART 2
+
+We will load the ToothGrowth data from the R datasets package and do some exploratory data analysis and provide a summary of the data.
+```{r fig.width=6, fig.height=4, echo=FALSE}
+library("ggplot2", lib.loc="/Library/Frameworks/R.framework/Versions/3.1/Resources/library")
+tg <- ToothGrowth
+summary(tg)
+ggplot(tg, aes(x=as.character(dose), y=len, colour=supp)) + geom_point() +scale_colour_manual(values=c("red", "blue"))  + xlab("Dose") + ylab("Tooth Length")
+```
+
+From looking at the data in the plot you can see that there is an increase in tooth growth as the dose goes up for both orange juice(OJ) and ascorbic acid(VC).   At the lower doses it appears that OJ gives a better benefit than VC, but at the highest dose there does not seem to be much of a difference.  I ran t.tests comparing OJ to VC with a null hypothesis that true difference in the means is between OJ and VC is 0, and an alternative hypothisis that the true difference in the means between OJ and VC is not equal to 0.  For this test my p value for rejection of the null hypothesis is .05.  But to look deeper at the dosages, I performed 3 more test, 1 for each dose to see if there was a difference at the various dosages.   For this my p value was 0.0167 (.05 divided by 3) to account for the multiple tests.
+```{r echo=FALSE}
+tg05 <- subset(tg, dose==.5)
+tg1 <- subset(tg, dose==1)
+tg2 <- subset(tg, dose==2)
+tall <- t.test(len ~ supp, paired=FALSE, var.equal=TRUE, data=tg)
+t05 <- t.test(len ~ supp, paired=FALSE, var.equal=TRUE, data=tg05, conf.level = 0.9833)
+t1 <- t.test(len ~ supp, paired=FALSE, var.equal=TRUE, data=tg1, conf.level = 0.9833)
+t2 <- t.test(len ~ supp, paired=FALSE, var.equal=TRUE, data=tg2, conf.level = 0.9833)
+```
+* For the compares of all doses of OJ and VC, the p value of `r tall$p.value` which is greater than .05 and a confidence interval of `r tall$conf.int` that includes 0 we fail to reject the null hypothisis.
+* For the .5 dose, the very small p value of `r t05$p.value` and a confidence interval of `r t05$conf.int` that does not include 0 we do reject the null hypothesis.
+* For the 1.0 dose, the very small p value of `r t1$p.value` and a confidence interval of `r t1$conf.int` that does not include 0 we do reject the null hypothesis.
+* For the 2.0 dose, the very high p value of `r t2$p.value` and a confidence interval of `r t2$conf.int` that includes 0 we fail to reject the null hypothesis.
+
+# APPENDIX
+
+The code used to generate the document
+
+Statistical Inference Project
+========================================================
+
+## Part 1.  
+The exponential distribution can be simulated in R with rexp(n, lambda) where lambda is the rate parameter. The mean of exponential distribution is 1/lambda and the standard deviation is also also 1/lambda. Set lambda = 0.2 for all of the simulations. In this simulation, you will investigate the distribution of averages of 40 exponential(0.2)s. Note that you will need to do a thousand or so simulated averages of 40 exponentials.
+
+```{r eval=FALSE}
+sim <- rexp(40, .2)
+simMatrix <- as.matrix(sim)
+for (i in 1:999) {
+  sim <- rexp(40, .2)
+  simMatrix <- cbind(simMatrix, sim)}
+means <- colMeans(simMatrix)
+simMedian <- median(means)
+```
+
+As defined in the problem statement the theoretical center of the distirubiton is 1/lambda or 1/.2 which is equal to 5.   The center of this distribution is the median of the means for the 1000 simulations which is `r simMedian`.
+
+You can see visually that the distribution is approximately normal from looking at a histogram of the distribution, though it does appear to be slightly right skewed.  Increasing the number of exponentials in each simulation will make the distribution more normal, but this looks normal enough.  Further, a quartiles plot with the theoretical line where the distributions should be, shows that the distribution follows the line closely, but does lose it a bid in the tails above 2 standard deviations and even more so with the outliers above 3 standard deviations from the mean.
+
+```{r fig.width=4, fig.height=4, fig.show='hold', eval=FALSE}
+hist(means, breaks=30)
+qqnorm(means)
+qqline(means)
+```
+
+Theoretically the coverage for this simulation using a 1.96 should be about 95%.   In general it will be somewhat lower because with 40 exponentials per sample the T distribution for 95% would be about 2.02, but 1.96 should be close enough.  For this sample we are taking the means of each sample and multiplying it by the theoretical standard deviation divided by the square root of 40 (the number of exponentials in each simulation).
+```{r eval=FALSE}
+cintmin <- function(rw) {mean(rw) - (1.96 * 5/sqrt(40))}
+cintmax <- function(rw) {mean(rw) + (1.96 * 5/sqrt(40))}
+minv <- apply(simMatrix, 2, cintmin)
+maxv <- apply(simMatrix, 2, cintmax)
+
+fails <- length(which(maxv < 5)) + length(which(minv > 5))
+```
+Out of the 1000 simulations, `r fails`, were not in the 95% confidence interval which is close to what you would expect.
+
+## PART 2
+
+We will load the ToothGrowth data from the R datasets package and do some exploratory data analysis and provide a summary of the data.
+```{r fig.width=6, fig.height=4, eval=FALSE}
+library("ggplot2", lib.loc="/Library/Frameworks/R.framework/Versions/3.1/Resources/library")
+tg <- ToothGrowth
+summary(tg)
+ggplot(tg, aes(x=as.character(dose), y=len, colour=supp)) + geom_point() +scale_colour_manual(values=c("red", "blue")) + xlab("Dose") + ylab("Tooth Length")
+```
+
+From looking at the data in the plot you can see that there is an increase in tooth growth as the dose goes up for both orange juice(OJ) and ascorbic acid(VC).   At the lower doses it appears that OJ gives a better benefit than VC, but at the highest dose there does not seem to be much of a difference.  I ran t.tests comparing OJ to VC with a null hypothesis that true difference in the means is between OJ and VC is 0, and an alternative hypothisis that the true difference in the means between OJ and VC is not equal to 0.  For this test my p value for rejection of the null hypothesis is .05.  But to look deeper at the dosages, I performed 3 more test, 1 for each dose to see if there was a difference at the various dosages.   For this my p value was 0.0167 (.05 divided by 3) to account for the multiple tests.
+```{r eval=FALSE}
+tg05 <- subset(tg, dose==.5)
+tg1 <- subset(tg, dose==1)
+tg2 <- subset(tg, dose==2)
+tall <- t.test(len ~ supp, paired=FALSE, var.equal=TRUE, data=tg)
+t05 <- t.test(len ~ supp, paired=FALSE, var.equal=TRUE, data=tg05, conf.level = 0.9833)
+t1 <- t.test(len ~ supp, paired=FALSE, var.equal=TRUE, data=tg1, conf.level = 0.9833)
+t2 <- t.test(len ~ supp, paired=FALSE, var.equal=TRUE, data=tg2, conf.level = 0.9833)
+```
+* For the compares of all doses of OJ and VC, the p value of `r tall$p.value` which is greater than .05 and a confidence interval of `r tall$conf.int` that includes 0 we fail to reject the null hypothisis.
+* For the .5 dose, the very small p value of `r t05$p.value` and a confidence interval of `r t05$conf.int` that does not include 0 we do reject the null hypothesis.
+* For the 1.0 dose, the very small p value of `r t1$p.value` and a confidence interval of `r t1$conf.int` that does not include 0 we do reject the null hypothesis.
+* For the 2.0 dose, the very high p value of `r t2$p.value` and a confidence interval of `r t2$conf.int` that includes 0 we fail to reject the null hypothesis. 
